@@ -1,60 +1,162 @@
 /* ---------------------------------------------
-   URL.DIET — Neon Terminal UI Logic
-   --------------------------------------------- */
+   URL.DIET — Cyberpunk Overkill Mode Logic
+--------------------------------------------- */
 
-const form = document.getElementById("shortenForm");
-const longUrlInput = document.getElementById("longUrl");
-const resultArea = document.getElementById("resultArea");
-const alertArea = document.getElementById("alertArea");
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("shortenForm");
+  const longUrlInput = document.getElementById("longUrl");
+  const resultArea = document.getElementById("resultArea");
+  const alertArea = document.getElementById("alertArea");
+  const logoMain = document.getElementById("logoMain");
+  const footerTicker = document.getElementById("footerTicker");
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+  /* ---------- FORM / SHORTENER (DEMO MODE) ---------- */
 
-  const longUrl = longUrlInput.value.trim();
-  if (!longUrl) return;
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
 
-  // Clear previous output
-  resultArea.innerHTML = "";
-  resultArea.classList.add("hidden");
-  alertArea.innerHTML = "";
+    const longUrl = longUrlInput.value.trim();
+    if (!longUrl) return;
 
-  try {
-    // FUTURE: Call your Worker backend
-    // const res = await fetch("/api/shorten", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ long_url: longUrl }),
-    // });
+    // Clear previous
+    resultArea.innerHTML = "";
+    resultArea.classList.add("hidden");
+    alertArea.innerHTML = "";
 
-    // TEMPORARY PREVIEW MODE — Fake short URL
+    // Fake key for now – will be replaced by Worker endpoint later
     const fakeKey = Math.random().toString(36).substring(2, 8);
-    const shortUrl = `https://url.diet/${fakeKey}`;
+    const shortUrl = `${window.location.origin}/${fakeKey}`;
 
-    // Build UI result card
-    resultArea.innerHTML = `
-      <div class="result-card">
-        <div class="result-label">Shortened URL</div>
-        <a class="short-url-text" href="${shortUrl}" target="_blank">${shortUrl}</a>
-        <button class="copy-btn" data-url="${shortUrl}">Copy</button>
+    const card = document.createElement("div");
+    card.className = "result-card";
+    card.innerHTML = `
+      <div class="result-label">Shortened URL</div>
+      <div class="result-main">
+        <a class="short-url-text" href="${shortUrl}" target="_blank" rel="noopener">
+          ${shortUrl}
+        </a>
+        <button class="copy-btn" type="button" data-url="${shortUrl}">
+          Copy
+        </button>
       </div>
     `;
+
+    resultArea.appendChild(card);
     resultArea.classList.remove("hidden");
 
-    // Copy button handler
-    const copyBtn = resultArea.querySelector(".copy-btn");
+    const copyBtn = card.querySelector(".copy-btn");
     copyBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText(shortUrl);
+      const url = copyBtn.getAttribute("data-url");
+      if (!url) return;
+      navigator.clipboard.writeText(url).catch(() => {});
+      const original = copyBtn.textContent;
       copyBtn.textContent = "Copied!";
-      setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
+      setTimeout(() => (copyBtn.textContent = original), 1200);
+    });
+  });
+
+  /* ---------- RANDOM LOGO GLITCH BURSTS ---------- */
+
+  function triggerLogoSpike() {
+    if (!logoMain) return;
+    logoMain.classList.add("logo-spike");
+    setTimeout(() => logoMain.classList.remove("logo-spike"), 180);
+  }
+
+  setInterval(() => {
+    if (Math.random() < 0.25) triggerLogoSpike();
+  }, 1200);
+
+  /* ---------- FOOTER "SYSTEM TICKER" SCROLL ---------- */
+
+  if (footerTicker) {
+    const base = footerTicker.textContent.trim();
+    footerTicker.textContent = base + " " + base + " " + base;
+  }
+
+  /* ---------- PARTICLE BACKGROUND ---------- */
+
+  const canvas = document.getElementById("bgCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
+
+  const particles = [];
+  const MAX_PARTICLES = 70;
+
+  class Particle {
+    constructor() {
+      this.reset(true);
+    }
+
+    reset(initial = false) {
+      this.x = Math.random() * width;
+      this.y = initial ? Math.random() * height : height + Math.random() * 40;
+      this.size = 1 + Math.random() * 2.4;
+      this.speedY = -0.3 - Math.random() * 0.7;
+      this.speedX = (Math.random() - 0.5) * 0.3;
+      this.alpha = 0.2 + Math.random() * 0.6;
+      this.hue = 180 + Math.random() * 120; // cyan -> magenta
+    }
+
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      if (this.y < -40 || this.x < -40 || this.x > width + 40) {
+        this.reset();
+      }
+    }
+
+    draw(ctx) {
+      ctx.beginPath();
+      const gradient = ctx.createLinearGradient(
+        this.x,
+        this.y,
+        this.x,
+        this.y + 16
+      );
+      gradient.addColorStop(
+        0,
+        `hsla(${this.hue}, 100%, 72%, ${this.alpha})`
+      );
+      gradient.addColorStop(
+        1,
+        `hsla(${this.hue + 40}, 100%, 40%, 0)`
+      );
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = this.size;
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.x, this.y + 16);
+      ctx.stroke();
+    }
+  }
+
+  for (let i = 0; i < MAX_PARTICLES; i++) {
+    particles.push(new Particle());
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+    ctx.globalCompositeOperation = "lighter";
+
+    particles.forEach((p) => {
+      p.update();
+      p.draw(ctx);
     });
 
-  } catch (err) {
-    console.error(err);
-    alertArea.innerHTML = `
-      <div class="alert alert-error">
-        <div class="alert-title">Error</div>
-        <div class="alert-body">Something went wrong. Try again.</div>
-      </div>
-    `;
+    requestAnimationFrame(animate);
   }
+
+  animate();
+
+  window.addEventListener("resize", () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  });
 });
