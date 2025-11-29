@@ -5,64 +5,85 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname;
 
-    // CORS preflight for /api/shorten
-    if (request.method === "OPTIONS" && pathname === "/api/shorten") {
-      return handleOptions();
+    // Build CORS headers dynamically based on request Origin
+    const origin = request.headers.get("Origin");
+    const allowedOrigins = [
+      "https://url.diet",
+      "https://www.url.diet",
+      "https://url-diet.pages.dev",
+      "https://*.url-diet.pages.dev"
+    ];
+
+    const allowOrigin = allowedOrigins.includes(origin) ? origin : "https://url.diet";
+
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": allowOrigin,
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Max-Age": "86400"
+    };
+
+    // -------- OPTIONS Preflight Handling --------
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
 
-    // API route: POST /api/shorten
+    // -------- POST /api/shorten --------
     if (request.method === "POST" && pathname === "/api/shorten") {
-      return handleShorten(request, env);
+      return handleShorten(request, env, corsHeaders);
     }
 
-    // Redirect route: GET /:id
+    // -------- GET /<id> redirect --------
     if (request.method === "GET" && pathname !== "/" && !pathname.startsWith("/api/")) {
-      return handleRedirect(request, env, ctx);
+      return handleRedirect(request, env, ctx, corsHeaders);
     }
 
-    // Fallback
-    return new Response("Not found", { status: 404 });
+    // Default
+    return new Response("Not found", { status: 404, headers: corsHeaders });
   }
 };
 
-function handleOptions() {
+
+// ========== OPTIONS HANDLER (unused - main logic now above) ==========
+function handleOptions(corsHeaders) {
   return new Response(null, {
     status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type"
-    }
+    headers: corsHeaders
   });
 }
 
-async function handleShorten(request, env) {
+
+// ========== POST /api/shorten ==========
+async function handleShorten(request, env, corsHeaders) {
   try {
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
-    // Simple per-IP rate limiting
+    // Rate limiting
     const rateOk = await checkRateLimit(env, ip);
     if (!rateOk) {
-      return json(
-        { error: "Rate limit exceeded. Please try again later." },
-        429
-      );
+      return json({ error: "Rate limit exceeded. Please try again later." }, 429, corsHeaders);
     }
 
-    const body = await request.json().catch(() => null);
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Invalid JSON" }, 400, corsHeaders);
+    }
+
     const longUrl = body?.long_url || body?.longUrl || "";
 
     if (!longUrl || !/^https?:\/\//i.test(longUrl)) {
-      return json({ error: "Invalid or missing URL (must start with http:// or https://)" }, 400);
+      return json({ error: "Invalid or missing URL (must start with http:// or https://)" }, 400, corsHeaders);
     }
 
-    // Generate short key
+    // Generate key
     const key = generateKey();
 
-    // Save to KV for fast lookups
+    // Save to KV
     await env.URLS.put(key, longUrl);
 
-    // Save to D1 for metadata & analytics
+    // Save metadata to D1
     const nowSec = Math.floor(Date.now() / 1000);
     await env.DB.prepare(
       `INSERT INTO links (short_key, long_url, created_at, total_clicks)
@@ -74,43 +95,49 @@ async function handleShorten(request, env) {
     const shortUrl = `https://url.diet/${key}`;
 
     return json(
-      {
-        short_url: shortUrl,
-        long_url: longUrl,
-        key
-      },
-      200
+      { short_url: shortUrl, long_url: longUrl, key },
+      200,
+      corsHeaders
     );
+
   } catch (err) {
     console.error("Error in /api/shorten:", err);
-    return json({ error: "Internal server error" }, 500);
+    return json({ error: "Internal server error" }, 500, corsHeaders);
   }
 }
 
-async function handleRedirect(request, env, ctx) {
+
+// ========== GET /<id> Redirect ==========
+async function handleRedirect(request, env, ctx, corsHeaders) {
   const url = new URL(request.url);
-  const key = url.pathname.slice(1); // remove leading "/"
+  const key = url.pathname.slice(1);
 
   if (!key) {
-    return new Response("Missing key", { status: 400 });
+    return new Response("Missing key", { status: 400, headers: corsHeaders });
   }
 
   const longUrl = await env.URLS.get(key);
 
   if (!longUrl) {
-    return new Response("Short URL not found", { status: 404 });
+    return new Response("Short URL not found", { status: 404, headers: corsHeaders });
   }
 
-  // Async logging to D1
+  // Log analytics
   ctx.waitUntil(logRedirect(request, env, key));
 
-  return Response.redirect(longUrl, 302);
+  return new Response(null, {
+    status: 302,
+    headers: { Location: longUrl, ...corsHeaders }
+  });
 }
 
-// ---------- Helpers ----------
 
+// ========================================================
+// HELPERS
+// ========================================================
+
+// Generate short key
 function generateKey(length = 8) {
-  // Short, URL-safe key using a-z0-9 (no uppercase for simplicity)
   const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
   let key = "";
   const randomBytes = crypto.getRandomValues(new Uint8Array(length));
@@ -120,8 +147,9 @@ function generateKey(length = 8) {
   return key;
 }
 
+
+// Rate limit: 60/hour per IP
 async function checkRateLimit(env, ip) {
-  // Very simple: IP + hour bucket
   const now = new Date();
   const hourBucket = `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}-${now.getUTCHours()}`;
   const rateKey = `rate:${ip}:${hourBucket}`;
@@ -129,19 +157,17 @@ async function checkRateLimit(env, ip) {
   const current = await env.RATE_LIMIT.get(rateKey);
   const count = current ? parseInt(current, 10) : 0;
 
-  const LIMIT = 60; // 60 shorten requests per IP per hour (tweak later)
+  const LIMIT = 60;
 
-  if (count >= LIMIT) {
-    return false;
-  }
+  if (count >= LIMIT) return false;
 
-  await env.RATE_LIMIT.put(rateKey, String(count + 1), {
-    expirationTtl: 3600 // 1 hour
-  });
+  await env.RATE_LIMIT.put(rateKey, String(count + 1), { expirationTtl: 3600 });
 
   return true;
 }
 
+
+// Log redirect analytics to D1
 async function logRedirect(request, env, key) {
   try {
     const ip = request.headers.get("CF-Connecting-IP") || "";
@@ -156,6 +182,7 @@ async function logRedirect(request, env, key) {
         `INSERT INTO redirect_logs (short_key, timestamp, ip_hash, user_agent, referrer)
          VALUES (?, ?, ?, ?, ?)`
       ).bind(key, nowSec, ipHash, userAgent, referrer),
+
       env.DB.prepare(
         `UPDATE links
          SET total_clicks = total_clicks + 1,
@@ -163,11 +190,14 @@ async function logRedirect(request, env, key) {
          WHERE short_key = ?`
       ).bind(nowSec, key)
     ]);
+
   } catch (err) {
     console.error("Error logging redirect:", err);
   }
 }
 
+
+// Hash IP for privacy-safe analytics
 async function hashIP(ip) {
   const data = new TextEncoder().encode(ip);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -175,12 +205,14 @@ async function hashIP(ip) {
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-function json(obj, status = 200) {
+
+// JSON helper with CORS
+function json(obj, status = 200, corsHeaders = {}) {
   return new Response(JSON.stringify(obj), {
     status,
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*"
+      ...corsHeaders
     }
   });
 }

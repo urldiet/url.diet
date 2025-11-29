@@ -10,8 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoMain = document.getElementById("logoMain");
   const footerTicker = document.getElementById("footerTicker");
 
-  // 🔌 Where the API actually lives (your Worker)
-  const API_BASE = "https://url-diet-worker.urldiet.workers.dev";
+  // 🔌 Worker API lives under the same domain now
+  const API_BASE = "/api";
 
   /* -------------------------------------------------
       HOLO-REACTIVE TYPING FX
@@ -47,8 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
     alertArea.innerHTML = "";
 
     try {
-      // POST to Worker API (NOT to url.diet directly)
-      const response = await fetch(`${API_BASE}/api/shorten`, {
+      // POST to Worker API via same-origin route
+      const response = await fetch(`${API_BASE}/shorten`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ long_url: longUrl })
@@ -58,9 +58,8 @@ document.addEventListener("DOMContentLoaded", () => {
         let errJson = {};
         try {
           errJson = await response.json();
-        } catch {
-          // ignore JSON parse errors
-        }
+        } catch { /* ignore */ }
+
         throw new Error(errJson.error || "Shortening failed.");
       }
 
@@ -141,9 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const MAX_PARTICLES = 70;
 
   class Particle {
-    constructor() {
-      this.reset(true);
-    }
+    constructor() { this.reset(true); }
 
     reset(initial = false) {
       this.x = Math.random() * width;
@@ -166,7 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + 14);
       grad.addColorStop(0, `hsla(${this.hue}, 100%, 70%, ${this.alpha})`);
       grad.addColorStop(1, `hsla(${this.hue + 40}, 100%, 40%, 0)`);
-
       ctx.strokeStyle = grad;
       ctx.lineWidth = this.size;
       ctx.moveTo(this.x, this.y);
@@ -180,12 +176,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function animate() {
     ctx.clearRect(0, 0, width, height);
     ctx.globalCompositeOperation = "lighter";
-
     particles.forEach((p) => {
       p.update();
       p.draw(ctx);
     });
-
     requestAnimationFrame(animate);
   }
 
