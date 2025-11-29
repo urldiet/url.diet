@@ -10,6 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoMain = document.getElementById("logoMain");
   const footerTicker = document.getElementById("footerTicker");
 
+  // 🔌 Where the API actually lives (your Worker)
+  const API_BASE = "https://url-diet-worker.urldiet.workers.dev";
+
   /* -------------------------------------------------
       HOLO-REACTIVE TYPING FX
   --------------------------------------------------- */
@@ -44,8 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
     alertArea.innerHTML = "";
 
     try {
-      // POST to Worker
-      const response = await fetch("/shorten", {
+      // POST to Worker API (NOT to url.diet directly)
+      const response = await fetch(`${API_BASE}/api/shorten`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ long_url: longUrl })
@@ -53,7 +56,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!response.ok) {
         let errJson = {};
-        try { errJson = await response.json(); } catch {}
+        try {
+          errJson = await response.json();
+        } catch {
+          // ignore JSON parse errors
+        }
         throw new Error(errJson.error || "Shortening failed.");
       }
 
@@ -134,7 +141,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const MAX_PARTICLES = 70;
 
   class Particle {
-    constructor() { this.reset(true); }
+    constructor() {
+      this.reset(true);
+    }
 
     reset(initial = false) {
       this.x = Math.random() * width;
