@@ -10,6 +10,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoMain = document.getElementById("logoMain");
   const footerTicker = document.getElementById("footerTicker");
 
+  /* ---------- HOLO-REACTIVE TYPING FX ---------- */
+
+  const inputShell = longUrlInput ? longUrlInput.closest(".input-shell") : null;
+  let typingTimeout;
+
+  if (longUrlInput && inputShell) {
+    longUrlInput.addEventListener("input", () => {
+      inputShell.classList.add("typing");
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        inputShell.classList.remove("typing");
+      }, 280);
+    });
+  }
+
   /* ---------- FORM / SHORTENER (DEMO MODE) ---------- */
 
   form.addEventListener("submit", (e) => {
