@@ -1,2 +1,4 @@
 /api/*
-  X-Pages-Functions: bypass
+  Access-Control-Allow-Origin: https://url.diet
+  Access-Control-Allow-Methods: GET, POST, OPTIONS
+  Access-Control-Allow-Headers: Content-Type
