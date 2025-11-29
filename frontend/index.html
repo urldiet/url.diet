@@ -2,121 +2,78 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>url.diet — Shrink your link. Amplify the signal.</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta
-    name="description"
-    content="url.diet — cyberpunk URL shortener. Slice the noise. Keep the signal."
-  />
+  <title>URL.DIET — Neon Terminal Splicer</title>
+
   <link rel="stylesheet" href="assets/css/cyberpunk.css" />
 </head>
 <body>
+
+  <!-- CRT & Scanline Overlays -->
   <div class="scanlines"></div>
   <div class="crt-overlay"></div>
 
   <div class="page-wrap">
+
+    <!-- HEADER -->
     <header class="header">
       <div class="logo-glitch">
-        <span class="logo-main">url.diet</span>
-        <span class="logo-shadow">url.diet</span>
+        <span class="logo-shadow">URL.DIET</span>
+        <span class="logo-main">URL.DIET</span>
       </div>
-      <div class="tagline">
-        <span>S hrink your link.</span>
-        <span> Amplify the signal.</span>
-      </div>
+      <div class="tagline">Shrink your link. Amplify the signal.</div>
     </header>
 
+    <!-- MAIN TERMINAL PANEL -->
     <main class="main">
       <section class="panel panel-main">
-        <div class="panel-header">
-          <span class="panel-title">Neon Link Splicer</span>
-          <span class="panel-subtitle">v4.0 • Edge-accelerated • Quantum-ready*</span>
-        </div>
 
+        <header class="panel-header">
+          <div class="panel-title">Neon Link Splicer</div>
+          <div class="panel-subtitle">
+            v4.0 • Edge-Accelerated • Quantum-Ready*
+          </div>
+        </header>
+
+        <!-- FORM -->
         <form id="shortenForm" class="shorten-form">
-          <label for="longUrl" class="field-label">Paste the bloated URL</label>
+          <label class="field-label">Paste the bloated URL</label>
+
           <div class="input-row">
             <input
-              type="url"
+              type="text"
               id="longUrl"
-              name="longUrl"
               class="neon-input"
-              placeholder="https://example.com/some/monstrous/tracking/string?utm_source=..."
+              placeholder="https://example.com/monster/tracking/string?utm=death&param=ugh"
               required
             />
-            <button type="submit" class="neon-button">
-              <span class="btn-text">Shrink</span>
-              <span class="btn-glitch"></span>
+            <button class="neon-button" type="submit">
+              <span>Shrink</span>
+              <div class="btn-glitch"></div>
             </button>
           </div>
-          <p class="field-hint">
-            No signup. No friction. Strict rate limits keep the bots out.
-          </p>
+
+          <p class="field-hint">No signup. No friction. Strict rate limits keep bots out.</p>
         </form>
 
-        <div id="resultCard" class="result-card hidden">
-          <div class="result-header">
-            <span class="result-label">Shortened URL</span>
-            <span class="pill pill-status">LIVE</span>
-          </div>
-          <div class="result-body">
-            <a id="shortUrlLink" href="#" target="_blank" rel="noopener" class="short-url-text"></a>
-            <button id="copyBtn" class="chip chip-copy" type="button">
-              COPY
-            </button>
-          </div>
-          <div class="result-footer">
-            <span class="meta-label">Original:</span>
-            <span id="originalUrl" class="meta-value"></span>
-          </div>
-        </div>
+        <!-- RESULT AREA -->
+        <div id="resultArea" class="hidden"></div>
 
-        <div id="errorBox" class="alert alert-error hidden"></div>
-        <div id="infoBox" class="alert alert-info">
-          <span class="alert-title">Heads up:</span>
-          <span class="alert-body">
-            This is the no-auth preview. Enterprise analytics, custom domains, and
-            quantum-safe vault mode are coming online soon.
-          </span>
-        </div>
-      </section>
+        <!-- ALERT AREA -->
+        <div id="alertArea"></div>
 
-      <section class="panel panel-side">
-        <div class="panel-header">
-          <span class="panel-title">Telemetry Snapshot</span>
-        </div>
-        <ul class="stat-list">
-          <li class="stat-item">
-            <span class="stat-label">Latency</span>
-            <span class="stat-value" id="latencyValue">&lt;20ms</span>
-          </li>
-          <li class="stat-item">
-            <span class="stat-label">Edge nodes</span>
-            <span class="stat-value">Global mesh</span>
-          </li>
-          <li class="stat-item">
-            <span class="stat-label">Mode</span>
-            <span class="stat-value">Freemium • Unbound*</span>
-          </li>
-          <li class="stat-item">
-            <span class="stat-label">Theme</span>
-            <span class="stat-value">Cyberpunk</span>
-          </li>
-        </ul>
-
-        <div class="panel-footer">
-          <p class="panel-note">
-            *Quantum-safe encryption & account-tier limits will be activated in later phases.
-          </p>
-        </div>
       </section>
     </main>
 
+    <!-- FOOTER -->
     <footer class="footer">
-      <span>© <span id="year"></span> url.diet</span>
-      <span class="footer-separator">•</span>
-      <span>Built on the edge. Styled in neon.</span>
+      <span>© url.diet — Built on the edge.</span>
+      <span class="footer-separator">|</span>
+      <span>Styled in neon.</span>
+      <span class="footer-separator">|</span>
+      <span>*Enterprise analytics, custom domains, and quantum-safe vault mode coming soon.</span>
     </footer>
+
   </div>
 
   <script src="assets/js/app.js"></script>
