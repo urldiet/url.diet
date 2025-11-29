@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const footerTicker = document.getElementById("footerTicker");
 
   // 🔌 Worker API lives under the same domain now
-  const API_BASE = "/api";
+  const API_BASE = "https://url.diet/api";
 
   /* -------------------------------------------------
       HOLO-REACTIVE TYPING FX
