@@ -4,7 +4,7 @@ compatibility_date = "2024-05-01"
 
 # ---- ROUTES MUST BE ABOVE TABLES DUE TO WRANGLER BUG ----
 routes = [
-  { pattern = "https://url.diet/*", zone_name = "url.diet" }
+  { pattern = "url.diet/api/*", zone_name = "url.diet" }
 ]
 
 [[kv_namespaces]]
