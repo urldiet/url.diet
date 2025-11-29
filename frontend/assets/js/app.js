@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const footerTicker = document.getElementById("footerTicker");
 
   // 🔌 Worker API lives under the same domain now
-  const API_BASE = "url.diet/api";
+  const API_BASE = "https://url.diet/_worker";
 
   /* -------------------------------------------------
       HOLO-REACTIVE TYPING FX
@@ -49,10 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       // POST to Worker API via same-origin route
       const response = await fetch(`${API_BASE}/shorten`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ long_url: longUrl })
-      });
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ long_url: longUrl })
+    });
 
       if (!response.ok) {
         let errJson = {};

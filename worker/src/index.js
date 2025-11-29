@@ -29,7 +29,7 @@ export default {
     }
 
     // -------- POST /api/shorten --------
-    if (request.method === "POST" && pathname === "/api/shorten") {
+    if (request.method === "POST" && pathname === "/_worker/shorten") {
       return handleShorten(request, env, corsHeaders);
     }
 
