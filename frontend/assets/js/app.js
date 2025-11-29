@@ -10,7 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoMain = document.getElementById("logoMain");
   const footerTicker = document.getElementById("footerTicker");
 
-  /* ---------- HOLO-REACTIVE TYPING FX ---------- */
+  /* -------------------------------------------------
+      HOLO-REACTIVE TYPING FX
+  --------------------------------------------------- */
 
   const inputShell = longUrlInput ? longUrlInput.closest(".input-shell") : null;
   let typingTimeout;
@@ -18,86 +20,71 @@ document.addEventListener("DOMContentLoaded", () => {
   if (longUrlInput && inputShell) {
     longUrlInput.addEventListener("input", () => {
       inputShell.classList.add("typing");
+
       clearTimeout(typingTimeout);
       typingTimeout = setTimeout(() => {
         inputShell.classList.remove("typing");
-      }, 280);
+      }, 260);
     });
   }
 
-  /* ---------- FORM / SHORTENER (DEMO MODE) ---------- */
+  /* -------------------------------------------------
+      URL SHORTENER — LIVE MODE (CALLS WORKER)
+  --------------------------------------------------- */
 
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const longUrl = longUrlInput.value.trim();
-    if (!longUrl) return;
-
-    // Clear previous
-    resultArea.innerHTML = "";
-    resultArea.classList.add("hidden");
-    alertArea.innerHTML = "";
-
-    // Fake key for now – will be replaced by Worker endpoint later
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const longUrl = longUrlInput.value.trim();
     if (!longUrl) return;
 
-    // Clear UI elements
+    // Reset UI
     resultArea.innerHTML = "";
     resultArea.classList.add("hidden");
     alertArea.innerHTML = "";
 
     try {
-      // CALL WORKER API
+      // POST to Worker
       const response = await fetch("/shorten", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ long_url: longUrl })
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || "Network error");
+        let errJson = {};
+        try { errJson = await response.json(); } catch {}
+        throw new Error(errJson.error || "Shortening failed.");
       }
 
       const data = await response.json();
-
       const shortUrl = data.short_url;
 
-      // Build result card
+      // Build output card
       const card = document.createElement("div");
       card.className = "result-card";
       card.innerHTML = `
         <div class="result-label">Shortened URL</div>
         <div class="result-main">
-          <a class="short-url-text" href="${shortUrl}" target="_blank" rel="noopener">
+          <a href="${shortUrl}" class="short-url-text" target="_blank" rel="noopener">
             ${shortUrl}
           </a>
-          <button class="copy-btn" type="button" data-url="${shortUrl}">
-            Copy
-          </button>
+          <button class="copy-btn" data-url="${shortUrl}">Copy</button>
         </div>
       `;
 
       resultArea.appendChild(card);
       resultArea.classList.remove("hidden");
 
-      // Copy button logic
+      // COPY BUTTON
       const copyBtn = card.querySelector(".copy-btn");
       copyBtn.addEventListener("click", () => {
-        const url = copyBtn.getAttribute("data-url");
-        navigator.clipboard.writeText(url);
+        navigator.clipboard.writeText(shortUrl);
         copyBtn.textContent = "Copied!";
-        setTimeout(() => (copyBtn.textContent = "Copy"), 1200);
+        setTimeout(() => (copyBtn.textContent = "Copy"), 1400);
       });
 
     } catch (err) {
-      // Show error alert
       alertArea.innerHTML = `
         <div class="alert alert-error">
           <div class="alert-title">Error</div>
@@ -107,8 +94,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-
-  /* ---------- RANDOM LOGO GLITCH BURSTS ---------- */
+  /* -------------------------------------------------
+      LOGO GLITCH PULSES
+  --------------------------------------------------- */
 
   function triggerLogoSpike() {
     if (!logoMain) return;
@@ -120,14 +108,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (Math.random() < 0.25) triggerLogoSpike();
   }, 1200);
 
-  /* ---------- FOOTER "SYSTEM TICKER" SCROLL ---------- */
+  /* -------------------------------------------------
+      FOOTER "SYSTEM TICKER" SCROLL
+  --------------------------------------------------- */
 
   if (footerTicker) {
     const base = footerTicker.textContent.trim();
-    footerTicker.textContent = base + " " + base + " " + base;
+    footerTicker.textContent = `${base}   ${base}   ${base}`;
   }
 
-  /* ---------- PARTICLE BACKGROUND ---------- */
+  /* -------------------------------------------------
+      PARTICLE BACKGROUND ENGINE
+  --------------------------------------------------- */
 
   const canvas = document.getElementById("bgCanvas");
   if (!canvas) return;
@@ -142,45 +134,31 @@ document.addEventListener("DOMContentLoaded", () => {
   const MAX_PARTICLES = 70;
 
   class Particle {
-    constructor() {
-      this.reset(true);
-    }
+    constructor() { this.reset(true); }
 
     reset(initial = false) {
       this.x = Math.random() * width;
-      this.y = initial ? Math.random() * height : height + Math.random() * 40;
-      this.size = 1 + Math.random() * 2.4;
-      this.speedY = -0.3 - Math.random() * 0.7;
+      this.y = initial ? Math.random() * height : height + 20;
+      this.size = 1 + Math.random() * 2.3;
+      this.speedY = -0.25 - Math.random() * 0.7;
       this.speedX = (Math.random() - 0.5) * 0.3;
       this.alpha = 0.2 + Math.random() * 0.6;
-      this.hue = 180 + Math.random() * 120; // cyan -> magenta
+      this.hue = 180 + Math.random() * 120;
     }
 
     update() {
       this.x += this.speedX;
       this.y += this.speedY;
-      if (this.y < -40 || this.x < -40 || this.x > width + 40) {
-        this.reset();
-      }
+      if (this.y < -20 || this.x < -20 || this.x > width + 20) this.reset();
     }
 
     draw(ctx) {
       ctx.beginPath();
-      const gradient = ctx.createLinearGradient(
-        this.x,
-        this.y,
-        this.x,
-        this.y + 16
-      );
-      gradient.addColorStop(
-        0,
-        `hsla(${this.hue}, 100%, 72%, ${this.alpha})`
-      );
-      gradient.addColorStop(
-        1,
-        `hsla(${this.hue + 40}, 100%, 40%, 0)`
-      );
-      ctx.strokeStyle = gradient;
+      const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + 14);
+      grad.addColorStop(0, `hsla(${this.hue}, 100%, 70%, ${this.alpha})`);
+      grad.addColorStop(1, `hsla(${this.hue + 40}, 100%, 40%, 0)`);
+
+      ctx.strokeStyle = grad;
       ctx.lineWidth = this.size;
       ctx.moveTo(this.x, this.y);
       ctx.lineTo(this.x, this.y + 16);
@@ -188,9 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  for (let i = 0; i < MAX_PARTICLES; i++) {
-    particles.push(new Particle());
-  }
+  for (let i = 0; i < MAX_PARTICLES; i++) particles.push(new Particle());
 
   function animate() {
     ctx.clearRect(0, 0, width, height);
