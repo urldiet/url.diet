@@ -1,9 +1,8 @@
 {
   "version": 1,
-  "routes": [
-    {
-      "pattern": "/api/*",
-      "skip": true
-    }
+  "include": ["/*"],
+  "exclude": [
+    "/api/*",
+    "/favicon.ico"
   ]
 }

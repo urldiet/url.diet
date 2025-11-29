@@ -2,18 +2,18 @@ name = "url-diet-worker"
 main = "src/index.js"
 compatibility_date = "2024-05-01"
 
-# ---- ROUTES MUST BE ABOVE TABLES DUE TO WRANGLER BUG ----
+# Worker must run BEFORE Pages for /api/*
 routes = [
   { pattern = "url.diet/api/*", zone_name = "url.diet" }
 ]
 
 [[kv_namespaces]]
 binding = "URLS"
-id = "408cc1bda28c49bbbb24240789bd7b31"
+id = "408ccb1ad28c49bbbb24240789bd7b31"
 
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "3aab97f08db44b14a2611c4331828ad9"
+id = "3aab97f08d4b144a2611c4331828d8a9"
 
 [[d1_databases]]
 binding = "DB"
