@@ -39,36 +39,74 @@ document.addEventListener("DOMContentLoaded", () => {
     alertArea.innerHTML = "";
 
     // Fake key for now – will be replaced by Worker endpoint later
-    const fakeKey = Math.random().toString(36).substring(2, 8);
-    const shortUrl = `${window.location.origin}/${fakeKey}`;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    const card = document.createElement("div");
-    card.className = "result-card";
-    card.innerHTML = `
-      <div class="result-label">Shortened URL</div>
-      <div class="result-main">
-        <a class="short-url-text" href="${shortUrl}" target="_blank" rel="noopener">
-          ${shortUrl}
-        </a>
-        <button class="copy-btn" type="button" data-url="${shortUrl}">
-          Copy
-        </button>
-      </div>
-    `;
+    const longUrl = longUrlInput.value.trim();
+    if (!longUrl) return;
 
-    resultArea.appendChild(card);
-    resultArea.classList.remove("hidden");
+    // Clear UI elements
+    resultArea.innerHTML = "";
+    resultArea.classList.add("hidden");
+    alertArea.innerHTML = "";
 
-    const copyBtn = card.querySelector(".copy-btn");
-    copyBtn.addEventListener("click", () => {
-      const url = copyBtn.getAttribute("data-url");
-      if (!url) return;
-      navigator.clipboard.writeText(url).catch(() => {});
-      const original = copyBtn.textContent;
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => (copyBtn.textContent = original), 1200);
-    });
+    try {
+      // CALL WORKER API
+      const response = await fetch("/shorten", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ long_url: longUrl })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Network error");
+      }
+
+      const data = await response.json();
+
+      const shortUrl = data.short_url;
+
+      // Build result card
+      const card = document.createElement("div");
+      card.className = "result-card";
+      card.innerHTML = `
+        <div class="result-label">Shortened URL</div>
+        <div class="result-main">
+          <a class="short-url-text" href="${shortUrl}" target="_blank" rel="noopener">
+            ${shortUrl}
+          </a>
+          <button class="copy-btn" type="button" data-url="${shortUrl}">
+            Copy
+          </button>
+        </div>
+      `;
+
+      resultArea.appendChild(card);
+      resultArea.classList.remove("hidden");
+
+      // Copy button logic
+      const copyBtn = card.querySelector(".copy-btn");
+      copyBtn.addEventListener("click", () => {
+        const url = copyBtn.getAttribute("data-url");
+        navigator.clipboard.writeText(url);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => (copyBtn.textContent = "Copy"), 1200);
+      });
+
+    } catch (err) {
+      // Show error alert
+      alertArea.innerHTML = `
+        <div class="alert alert-error">
+          <div class="alert-title">Error</div>
+          <div class="alert-body">${err.message}</div>
+        </div>
+      `;
+    }
   });
+
 
   /* ---------- RANDOM LOGO GLITCH BURSTS ---------- */
 
